@@ -1,0 +1,112 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "gridpulse-ops",
+    "title": "GridPulse Operations Dashboard",
+    "tags": ["gridpulse", "energy", "operations"],
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 1,
+    "refresh": "30s",
+    "panels": [
+      {
+        "id": 1,
+        "title": "API Request Rate",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "rate(kong_http_requests_total[5m])",
+            "legendFormat": "{{service}}"
+          }
+        ],
+        "yAxes": [
+          {"label": "Requests/sec", "min": 0}
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Response Latency (p95)",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(kong_latency_bucket[5m]))",
+            "legendFormat": "p95 latency"
+          }
+        ],
+        "yAxes": [
+          {"label": "Latency (ms)", "min": 0}
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Error Rate",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+        "targets": [
+          {
+            "expr": "rate(kong_http_requests_total{code=~\"5..\"}[5m])",
+            "legendFormat": "5xx errors"
+          },
+          {
+            "expr": "rate(kong_http_requests_total{code=~\"4..\"}[5m])",
+            "legendFormat": "4xx errors"
+          }
+        ],
+        "yAxes": [
+          {"label": "Errors/sec", "min": 0}
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Requests by Consumer",
+        "type": "piechart",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+        "targets": [
+          {
+            "expr": "sum by (consumer) (kong_http_requests_total)",
+            "legendFormat": "{{consumer}}"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Rate Limiting",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 6, "x": 0, "y": 16},
+        "targets": [
+          {
+            "expr": "sum(rate(kong_http_requests_total{code=\"429\"}[5m]))",
+            "legendFormat": "Rate Limited Requests/sec"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Healthy Upstreams",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 6, "x": 6, "y": 16},
+        "targets": [
+          {
+            "expr": "kong_upstream_target_health{state=\"healthy\"}",
+            "legendFormat": "Healthy Targets"
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Kong Connections",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+        "targets": [
+          {
+            "expr": "kong_nginx_connections_total",
+            "legendFormat": "{{state}}"
+          }
+        ]
+      }
+    ]
+  },
+  "overwrite": true
+}

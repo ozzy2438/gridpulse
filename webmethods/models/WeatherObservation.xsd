@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- webmethods/models/WeatherObservation.xsd -->
+<!-- 
+    CANONICAL MODEL: WeatherObservation
+    
+    Hava durumu gözlem verileri için standart format.
+    Enerji üretimi ve talebi hava durumuna bağlı olduğu için kritik.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://gridpulse.energy/schemas/weather"
+           xmlns:gp="http://gridpulse.energy/schemas/weather"
+           elementFormDefault="qualified">
+  
+  <xs:element name="WeatherObservation">
+    <xs:annotation>
+      <xs:documentation>
+        Hava durumu gözlem event'i.
+        Open-Meteo API'den çekilen veriler bu formata dönüştürülür.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <!-- Benzersiz event kimliği -->
+        <xs:element name="eventId" type="xs:string">
+          <xs:annotation>
+            <xs:documentation>
+              Format: weather_{regionId}_{timestamp}
+              Örnek: weather_NSW1_202401151000
+            </xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        
+        <!-- Event tipi -->
+        <xs:element name="eventType" type="xs:string" fixed="WeatherObservation"/>
+        
+        <!-- Zaman bilgisi -->
+        <xs:element name="eventTime" type="xs:dateTime"/>
+        
+        <!-- Bölge bilgisi -->
+        <xs:element name="regionId" type="xs:string"/>
+        <xs:element name="locationName" type="xs:string"/>
+        
+        <!-- Hava durumu değerleri -->
+        <xs:element name="temperatureCelsius" type="xs:decimal" minOccurs="0"/>
+        <xs:element name="windSpeedKmh" type="xs:decimal" minOccurs="0"/>
+        <xs:element name="humidityPercent" type="xs:decimal" minOccurs="0"/>
+        
+        <!-- Metadata -->
+        <xs:element name="source" type="xs:string"/>
+        <xs:element name="ingestionTime" type="xs:dateTime"/>
+        <xs:element name="correlationId" type="xs:string"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  
+</xs:schema>

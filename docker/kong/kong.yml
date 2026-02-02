@@ -1,0 +1,116 @@
+# docker/kong/kong.yml
+# Declarative configuration - Git'te saklanır
+_format_version: "3.0"
+_transform: true
+
+# ========================================
+# SERVICES - Upstream API'ler
+# ========================================
+services:
+  - name: market-dispatch-service
+    url: http://host.docker.internal:5001/api/v1/dispatch
+    connect_timeout: 60000
+    write_timeout: 60000
+    read_timeout: 60000
+    retries: 3
+    
+  - name: weather-service
+    url: http://host.docker.internal:5001/api/v1/weather
+    connect_timeout: 60000
+    write_timeout: 60000
+    read_timeout: 60000
+    retries: 3
+
+# ========================================
+# ROUTES - URL yönlendirmeleri
+# ========================================
+routes:
+  - name: market-dispatch-route
+    service: market-dispatch-service
+    paths:
+      - /v1/market/dispatch
+    methods:
+      - GET
+      - POST
+    strip_path: false
+    preserve_host: true
+    
+  - name: weather-route
+    service: weather-service
+    paths:
+      - /v1/weather/observations
+    methods:
+      - GET
+    strip_path: false
+    preserve_host: true
+
+# ========================================
+# CONSUMERS - API kullanıcıları
+# ========================================
+consumers:
+  - username: market-analytics-team
+    custom_id: team-analytics
+    keyauth_credentials:
+      - key: analytics-team-secret-key-2024
+    
+  - username: operations-team
+    custom_id: team-ops
+    keyauth_credentials:
+      - key: ops-team-secret-key-2024
+      
+  - username: external-partner
+    custom_id: partner-001
+    keyauth_credentials:
+      - key: partner-secret-key-2024
+
+# ========================================
+# PLUGINS - Global ve servis bazlı
+# ========================================
+plugins:
+  # Global plugins
+  - name: correlation-id
+    config:
+      header_name: X-Correlation-ID
+      generator: uuid
+      echo_downstream: true
+      
+  - name: prometheus
+    config:
+      per_consumer: true
+      status_code_metrics: true
+      latency_metrics: true
+      bandwidth_metrics: true
+      upstream_health_metrics: true
+
+  # Market dispatch plugins
+  - name: rate-limiting
+    service: market-dispatch-service
+    config:
+      minute: 100
+      policy: local
+      fault_tolerant: true
+      hide_client_headers: false
+      
+  - name: key-auth
+    service: market-dispatch-service
+    config:
+      key_names:
+        - apikey
+        - X-API-Key
+      hide_credentials: true
+      
+  # Weather service plugins
+  - name: rate-limiting
+    service: weather-service
+    config:
+      minute: 60
+      policy: local
+      fault_tolerant: true
+      
+  - name: key-auth
+    service: weather-service
+    config:
+      key_names:
+        - apikey
+        - X-API-Key
+      hide_credentials: true

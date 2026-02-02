@@ -1,0 +1,19 @@
+# GridPulse Python Dependencies
+# Install with: pip install -r requirements.txt
+
+# Web Framework
+flask>=3.0.0
+
+# Kafka Client
+kafka-python>=2.0.2
+
+# HTTP Client
+requests>=2.31.0
+
+# Optional: Testing
+pytest>=7.4.0
+pytest-cov>=4.1.0
+
+# Optional: Code Quality
+black>=23.0.0
+flake8>=6.1.0

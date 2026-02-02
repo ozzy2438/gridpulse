@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- webmethods/models/MarketDispatchEvent.xsd -->
+<!-- 
+    CANONICAL MODEL: MarketDispatchEvent
+    
+    Bu şema tüm dispatch event'leri için standart formatı tanımlar.
+    Tüm sistemler (webMethods, Kafka consumer'ları, API'ler) bu şemayı kullanır.
+    
+    NEDEN CANONICAL MODEL?
+    - Farklı kaynaklar farklı formatlar kullanır
+    - Tüm consumer'lar aynı formatta veri bekler
+    - Şema değişikliklerini tek noktada yönetirsin
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://gridpulse.energy/schemas/dispatch"
+           xmlns:gp="http://gridpulse.energy/schemas/dispatch"
+           elementFormDefault="qualified">
+  
+  <xs:element name="MarketDispatchEvent">
+    <xs:annotation>
+      <xs:documentation>
+        Enerji piyasası dispatch event'i.
+        Her 5 dakikada AEMO'dan gelen üretim verileri bu formata dönüştürülür.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <!-- Benzersiz event kimliği -->
+        <xs:element name="eventId" type="xs:string">
+          <xs:annotation>
+            <xs:documentation>
+              Idempotent event ID. Aynı event tekrar gelse bile aynı ID'yi alır.
+              Format: {regionId}_{fuelType}_{timestamp}
+              Örnek: NSW1_SOLAR_20240115_100000
+            </xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        
+        <!-- Event tipi -->
+        <xs:element name="eventType" type="xs:string" fixed="MarketDispatchEvent">
+          <xs:annotation>
+            <xs:documentation>
+              Event tipi. Routing ve filtering için kullanılır.
+            </xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        
+        <!-- Zaman bilgisi -->
+        <xs:element name="eventTime" type="xs:dateTime">
+          <xs:annotation>
+            <xs:documentation>
+              Event'in gerçekleştiği zaman (AEMO settlement time).
+              UTC formatında.
+            </xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        
+        <!-- Bölge bilgisi -->
+        <xs:element name="regionId" type="gp:RegionType">
+          <xs:annotation>
+            <xs:documentation>
+              AEMO bölge kodu. Partitioning key olarak da kullanılır.
+            </xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        
+        <!-- Yakıt tipi -->
+        <xs:element name="fuelType" type="gp:FuelType">
+          <xs:annotation>
+            <xs:documentation>
+              Enerji üretim kaynağı tipi.
+            </xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        
+        <!-- Değer -->
+        <xs:element name="valueMW" type="xs:decimal">
+          <xs:annotation>
+            <xs:documentation>
+              Üretim değeri (Megawatt cinsinden).
+            </xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        
+        <xs:element name="unit" type="xs:string" fixed="MW">
+          <xs:annotation>
+            <xs:documentation>
+              Ölçü birimi. Her zaman MW.
+            </xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        
+        <!-- Metadata -->
+        <xs:element name="source" type="xs:string">
+          <xs:annotation>
+            <xs:documentation>
+              Veri kaynağı (AEMO, OPENNEM, DEMO, vb.).
+            </xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        
+        <xs:element name="ingestionTime" type="xs:dateTime">
+          <xs:annotation>
+            <xs:documentation>
+              webMethods'a alındığı zaman. Latency ölçümü için.
+            </xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        
+        <xs:element name="correlationId" type="xs:string">
+          <xs:annotation>
+            <xs:documentation>
+              End-to-end izlenebilirlik ID'si.
+              Tüm sistemlerde bu ID takip edilir.
+            </xs:documentation>
+          </xs:annotation>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  
+  <!-- Bölge tipleri -->
+  <xs:simpleType name="RegionType">
+    <xs:annotation>
+      <xs:documentation>
+        Avustralya NEM bölgeleri.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="NSW1">
+        <xs:annotation>
+          <xs:documentation>New South Wales</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="VIC1">
+        <xs:annotation>
+          <xs:documentation>Victoria</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="QLD1">
+        <xs:annotation>
+          <xs:documentation>Queensland</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="SA1">
+        <xs:annotation>
+          <xs:documentation>South Australia</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="TAS1">
+        <xs:annotation>
+          <xs:documentation>Tasmania</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+    </xs:restriction>
+  </xs:simpleType>
+  
+  <!-- Yakıt tipleri -->
+  <xs:simpleType name="FuelType">
+    <xs:annotation>
+      <xs:documentation>
+        Enerji üretim kaynakları.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="solar">
+        <xs:annotation>
+          <xs:documentation>Güneş enerjisi</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="wind">
+        <xs:annotation>
+          <xs:documentation>Rüzgar enerjisi</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="coal">
+        <xs:annotation>
+          <xs:documentation>Kömür</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="gas">
+        <xs:annotation>
+          <xs:documentation>Doğal gaz</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="hydro">
+        <xs:annotation>
+          <xs:documentation>Hidroelektrik</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="battery">
+        <xs:annotation>
+          <xs:documentation>Batarya depolama</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+    </xs:restriction>
+  </xs:simpleType>
+  
+</xs:schema>

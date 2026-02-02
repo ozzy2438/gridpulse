@@ -1,0 +1,16 @@
+# monitoring/prometheus.yml
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Kong metrikleri
+  - job_name: 'kong'
+    static_configs:
+      - targets: ['kong:8001']
+    metrics_path: /metrics
+
+  # Kafka metrikleri (JMX exporter ile)
+  - job_name: 'kafka'
+    static_configs:
+      - targets: ['kafka:9092']
