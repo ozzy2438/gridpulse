@@ -3,24 +3,24 @@
 GridPulse - Energy Integration Platform
 =======================================
 
-Bu dosya projenin ana giriş noktasıdır.
-Tüm sistemin hızlı bir özetini sağlar.
+This file is the main entry point of the project.
+Provides a quick overview of the entire system.
 
-Kullanım:
-    python main.py          # Proje bilgisini göster
-    python main.py demo     # Demo verileri gönder
-    python main.py server   # API server'ı başlat
+Usage:
+    python main.py          # Show project information
+    python main.py demo     # Send demo data
+    python main.py server   # Start API server
 """
 
 import sys
 import os
 
-# Project root'u path'e ekle
+# Add project root to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'scripts'))
 
 
 def print_banner():
-    """Proje banner'ını yazdır"""
+    """Print project banner"""
     print("""
 ╔══════════════════════════════════════════════════════════════════╗
 ║                                                                  ║
@@ -38,11 +38,11 @@ def print_banner():
 
 
 def print_info():
-    """Proje bilgisini yazdır"""
+    """Print project information"""
     print_banner()
     print("""
-PROJE YAPISI
-============
+PROJECT STRUCTURE
+=================
 
 ┌─────────────────────────────────────────────────────────────┐
 │  DATA SOURCES                                               │
@@ -75,30 +75,30 @@ PROJE YAPISI
 │        Team    Team    Team                                 │
 └─────────────────────────────────────────────────────────────┘
 
-HIZLI BAŞLANGIÇ
-===============
+QUICK START
+===========
 
-1. Altyapıyı başlat:
+1. Start infrastructure:
    $ docker-compose up -d
 
-2. Kafka topic'lerini oluştur:
+2. Create Kafka topics:
    $ ./scripts/create_kafka_topics.sh
 
-3. Kong'u yapılandır:
+3. Configure Kong:
    $ ./scripts/setup_kong.sh
 
-4. API server'ı başlat:
+4. Start API server:
    $ python scripts/api_server.py
 
-5. Demo verileri gönder:
+5. Send demo data:
    $ python scripts/kafka_producer.py
 
-6. API'yi test et:
+6. Test the API:
    $ curl -H "apikey: analytics-team-secret-key-2024" \\
        http://localhost:8000/v1/market/dispatch
 
-ERİŞİM NOKTALARI
-================
+ACCESS POINTS
+=============
 
   Kafka UI      : http://localhost:8180
   Kong Proxy    : http://localhost:8100
@@ -108,27 +108,27 @@ ERİŞİM NOKTALARI
   Prometheus    : http://localhost:9090
   API Server    : http://localhost:5001
 
-API ANAHTARLARI
-===============
+API KEYS
+========
 
   analytics-team-secret-key-2024  → market-analytics-team
   ops-team-secret-key-2024        → operations-team
   risk-team-secret-key-2024       → risk-team
 
-KOMUTLAR
+COMMANDS
 ========
 
-  python main.py          # Bu bilgiyi göster
-  python main.py demo     # Demo verileri Kafka'ya gönder
-  python main.py server   # API server'ı başlat
-  python main.py fetch    # AEMO ve hava durumu verilerini çek
+  python main.py          # Show this information
+  python main.py demo     # Send demo data to Kafka
+  python main.py server   # Start API server
+  python main.py fetch    # Fetch AEMO and weather data
 """)
 
 
 def run_demo():
-    """Demo verileri gönder"""
+    """Send demo data"""
     print_banner()
-    print("Demo verileri Kafka'ya gönderiliyor...")
+    print("Sending demo data to Kafka...")
     print()
     
     try:
@@ -167,18 +167,18 @@ def run_demo():
         producer.send_batch(sample_weather, "weather")
         producer.close()
         
-        print("\n✅ Demo verileri gönderildi!")
-        print("   Kafka UI'da kontrol et: http://localhost:8080")
-        
+        print("\n✅ Demo data sent!")
+        print("   Check in Kafka UI: http://localhost:8080")
+
     except Exception as e:
-        print(f"\n❌ Hata: {e}")
-        print("   Kafka'nın çalıştığından emin ol: docker-compose ps")
+        print(f"\n❌ Error: {e}")
+        print("   Make sure Kafka is running: docker-compose ps")
 
 
 def run_server():
-    """API server'ı başlat"""
+    """Start API server"""
     print_banner()
-    print("API Server başlatılıyor...")
+    print("Starting API Server...")
     print()
     
     try:
@@ -191,13 +191,13 @@ def run_server():
         app.run(host='0.0.0.0', port=5000, debug=True)
         
     except Exception as e:
-        print(f"\n❌ Hata: {e}")
+        print(f"\n❌ Error: {e}")
 
 
 def run_fetch():
-    """AEMO ve hava durumu verilerini çek"""
+    """Fetch AEMO and weather data"""
     print_banner()
-    print("Veriler çekiliyor...")
+    print("Fetching data...")
     print()
     
     try:
@@ -206,12 +206,12 @@ def run_fetch():
         weather_fetcher = WeatherDataFetcher()
         weather_data = weather_fetcher.fetch_all_regions()
         
-        print(f"\n✅ {len(weather_data)} bölge için hava durumu çekildi:")
+        print(f"\n✅ Weather data fetched for {len(weather_data)} regions:")
         for w in weather_data:
             print(f"   • {w['location_name']}: {w['temperature_celsius']}°C")
-        
+
     except Exception as e:
-        print(f"\n❌ Hata: {e}")
+        print(f"\n❌ Error: {e}")
 
 
 if __name__ == '__main__':
@@ -225,7 +225,7 @@ if __name__ == '__main__':
         elif command == 'fetch':
             run_fetch()
         else:
-            print(f"Bilinmeyen komut: {command}")
-            print("Kullanılabilir komutlar: demo, server, fetch")
+            print(f"Unknown command: {command}")
+            print("Available commands: demo, server, fetch")
     else:
         print_info()

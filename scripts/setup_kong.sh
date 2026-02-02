@@ -1,6 +1,6 @@
 #!/bin/bash
-# Kong API Gateway Yapılandırma Script'i
-# Bu script Kong'u Admin API üzerinden yapılandırır
+# Kong API Gateway Configuration Script
+# This script configures Kong via the Admin API
 
 echo "=========================================="
 echo "GridPulse - Kong API Gateway Setup"
@@ -8,7 +8,7 @@ echo "=========================================="
 
 KONG_ADMIN="http://localhost:8101"
 
-# Kong'un hazır olmasını bekle
+# Wait for Kong to be ready
 echo "Waiting for Kong to be ready..."
 until curl -s "$KONG_ADMIN/status" > /dev/null 2>&1; do
     sleep 2
@@ -16,7 +16,7 @@ done
 echo "Kong is ready!"
 
 # ========================================
-# 1. MARKET DISPATCH SERVİSİ
+# 1. MARKET DISPATCH SERVICE
 # ========================================
 echo ""
 echo "Creating market-dispatch-service..."
@@ -36,7 +36,7 @@ curl -s -X POST "$KONG_ADMIN/services/market-dispatch-service/routes" \
 echo "  ✅ market-dispatch-service created"
 
 # ========================================
-# 2. WEATHER OBSERVATIONS SERVİSİ
+# 2. WEATHER OBSERVATIONS SERVICE
 # ========================================
 echo ""
 echo "Creating weather-service..."
@@ -93,7 +93,7 @@ curl -s -X POST "$KONG_ADMIN/services/weather-service/plugins" \
 echo "  ✅ API key authentication configured"
 
 # ========================================
-# 5. CONSUMERS VE API KEYS
+# 5. CONSUMERS AND API KEYS
 # ========================================
 echo ""
 echo "Creating consumers and API keys..."
@@ -142,7 +142,7 @@ curl -s -X POST "$KONG_ADMIN/plugins" \
 echo "  ✅ Correlation ID plugin added"
 
 # ========================================
-# SONUÇ
+# RESULT
 # ========================================
 echo ""
 echo "=========================================="

@@ -1,10 +1,10 @@
 # docker/kong/kong.yml
-# Declarative configuration - Git'te saklanır
+# Declarative configuration - Stored in Git
 _format_version: "3.0"
 _transform: true
 
 # ========================================
-# SERVICES - Upstream API'ler
+# SERVICES - Upstream APIs
 # ========================================
 services:
   - name: market-dispatch-service
@@ -22,7 +22,7 @@ services:
     retries: 3
 
 # ========================================
-# ROUTES - URL yönlendirmeleri
+# ROUTES - URL redirections
 # ========================================
 routes:
   - name: market-dispatch-route
@@ -45,7 +45,7 @@ routes:
     preserve_host: true
 
 # ========================================
-# CONSUMERS - API kullanıcıları
+# CONSUMERS - API users
 # ========================================
 consumers:
   - username: market-analytics-team
@@ -64,7 +64,7 @@ consumers:
       - key: partner-secret-key-2024
 
 # ========================================
-# PLUGINS - Global ve servis bazlı
+# PLUGINS - Global and service-based
 # ========================================
 plugins:
   # Global plugins

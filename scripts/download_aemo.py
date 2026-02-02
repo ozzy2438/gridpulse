@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-AEMO Veri İndirme Script'i
+AEMO Data Download Script
 --------------------------
-Bu script AEMO'dan dispatch verilerini indirir ve işler.
+This script downloads and processes dispatch data from AEMO.
 
-NEDEN BU SCRIPT?
-- AEMO verileri ZIP formatında geliyor
-- Her 5 dakikada yeni dosya yayınlanıyor
-- Gerçek dünya entegrasyonlarında bu tür "polling" yaygın
+WHY THIS SCRIPT?
+- AEMO data comes in ZIP format
+- New file is published every 5 minutes
+- This type of "polling" is common in real-world integrations
 """
 
 import os
@@ -20,7 +20,7 @@ import json
 import logging
 import uuid
 
-# Logging ayarla
+# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
@@ -30,17 +30,17 @@ logger = logging.getLogger(__name__)
 
 class AEMODataFetcher:
     """
-    AEMO verilerini çeken sınıf.
-    
-    Interview'da açıklayabileceğin noktalar:
-    - Retry mekanizması
+    Class for fetching AEMO data.
+
+    Points you can explain in interview:
+    - Retry mechanism
     - Error handling
-    - Idempotency (aynı veriyi tekrar çekince sorun olmaz)
+    - Idempotency (no problem if fetching same data again)
     """
-    
-    # AEMO API endpoint'leri
-    # Gerçek üretimde nemweb.com.au kullanılır
-    # Demo için OpenNEM API daha pratik (JSON döner)
+
+    # AEMO API endpoints
+    # In real production, nemweb.com.au is used
+    # For demo, OpenNEM API is more practical (returns JSON)
     OPENNEM_API = "https://api.opennem.org.au"
     
     def __init__(self, output_dir: str = "data/raw"):
@@ -49,28 +49,28 @@ class AEMODataFetcher:
         
     def fetch_current_dispatch(self, region: str = "NEM") -> dict:
         """
-        Güncel dispatch verilerini çeker.
-        
+        Fetches current dispatch data.
+
         Args:
-            region: Bölge kodu (NEM=tüm piyasa)
-            
+            region: Region code (NEM=entire market)
+
         Returns:
-            dict: Normalize edilmiş dispatch verisi
+            dict: Normalized dispatch data
         """
         logger.info(f"Fetching dispatch data for region: {region}")
         
         try:
-            # OpenNEM API'den veri çek
+            # Fetch data from OpenNEM API
             url = f"{self.OPENNEM_API}/stats/power/{region.lower()}"
             response = requests.get(url, timeout=30)
             response.raise_for_status()
             
             data = response.json()
             
-            # Ham veriyi kaydet (debugging için)
+            # Save raw data (for debugging)
             self._save_raw(data, f"dispatch_{region}")
-            
-            # Normalize et
+
+            # Normalize
             normalized = self._normalize_dispatch(data)
             
             logger.info(f"Successfully fetched {len(normalized)} dispatch records")
@@ -78,26 +78,26 @@ class AEMODataFetcher:
             
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to fetch dispatch data: {e}")
-            # Retry veya DLQ'ya gönder burada olabilir
+            # Retry or send to DLQ could be here
             raise
     
     def _normalize_dispatch(self, raw_data: dict) -> list:
         """
-        Ham AEMO verisini canonical model'e dönüştürür.
-        
-        NEDEN NORMALIZASYON?
-        - Farklı kaynaklar farklı formatlar kullanır
-        - Tüm consumer'lar aynı formatta veri bekler
-        - Şema değişikliklerini tek noktada yönetirsin
+        Converts raw AEMO data to canonical model.
+
+        WHY NORMALIZATION?
+        - Different sources use different formats
+        - All consumers expect data in the same format
+        - You manage schema changes in one place
         """
         normalized = []
-        
-        # OpenNEM response yapısını işle
+
+        # Process OpenNEM response structure
         if "data" in raw_data:
             for fuel_type in raw_data["data"]:
                 for record in fuel_type.get("history", {}).get("data", []):
                     normalized.append({
-                        # Canonical model alanları
+                        # Canonical model fields
                         "event_id": self._generate_event_id(fuel_type, record),
                         "event_type": "MarketDispatchEvent",
                         "event_time": record.get("date"),
@@ -115,12 +115,12 @@ class AEMODataFetcher:
     
     def _generate_event_id(self, fuel_type: dict, record: dict) -> str:
         """
-        Idempotent event ID üretir.
-        
-        NEDEN ÖNEMLİ?
-        - Aynı event tekrar gelse bile aynı ID'yi alır
-        - Consumer tarafında deduplication yapılabilir
-        - "Exactly once" processing için kritik
+        Generates idempotent event ID.
+
+        WHY IMPORTANT?
+        - Even if same event comes again, it gets the same ID
+        - Deduplication can be done on consumer side
+        - Critical for "exactly once" processing
         """
         components = [
             fuel_type.get("region", "unknown"),
@@ -131,15 +131,15 @@ class AEMODataFetcher:
     
     def _generate_correlation_id(self) -> str:
         """
-        İzlenebilirlik için correlation ID üretir.
-        
-        Bu ID tüm sistemde takip edilir:
+        Generates correlation ID for traceability.
+
+        This ID is tracked throughout the system:
         AEMO → webMethods → Kafka → Kong → Consumer
         """
         return str(uuid.uuid4())
     
     def _save_raw(self, data: dict, prefix: str):
-        """Ham veriyi debug için kaydet"""
+        """Save raw data for debugging"""
         timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
         filepath = os.path.join(self.output_dir, f"{prefix}_{timestamp}.json")
         with open(filepath, 'w') as f:
@@ -149,18 +149,18 @@ class AEMODataFetcher:
 
 class WeatherDataFetcher:
     """
-    Hava durumu verilerini çeken sınıf.
-    
-    NEDEN HAVA DURUMU?
-    - Enerji talebi hava durumuna bağlı (sıcakta klima, soğukta ısıtma)
-    - Yenilenebilir enerji üretimi hava durumuna bağlı (güneş, rüzgar)
-    - Operasyonel kararlar için kritik
+    Class for fetching weather data.
+
+    WHY WEATHER?
+    - Energy demand depends on weather (AC in heat, heating in cold)
+    - Renewable energy production depends on weather (solar, wind)
+    - Critical for operational decisions
     """
-    
-    # Open-Meteo: Ücretsiz ve API key gerektirmiyor
+
+    # Open-Meteo: Free and doesn't require API key
     OPENMETEO_API = "https://api.open-meteo.com/v1/forecast"
-    
-    # Avustralya şehirleri (AEMO bölgeleriyle eşleşir)
+
+    # Australian cities (matches AEMO regions)
     LOCATIONS = {
         "NSW1": {"lat": -33.87, "lon": 151.21, "name": "Sydney"},
         "VIC1": {"lat": -37.81, "lon": 144.96, "name": "Melbourne"},
@@ -175,7 +175,7 @@ class WeatherDataFetcher:
     
     def fetch_weather(self, region_id: str) -> dict:
         """
-        Belirtilen bölge için hava durumu verisini çeker.
+        Fetches weather data for specified region.
         """
         if region_id not in self.LOCATIONS:
             raise ValueError(f"Unknown region: {region_id}")
@@ -196,7 +196,7 @@ class WeatherDataFetcher:
             response.raise_for_status()
             data = response.json()
             
-            # Normalize et
+            # Normalize
             normalized = self._normalize_weather(data, region_id, location)
             return normalized
             
@@ -206,7 +206,7 @@ class WeatherDataFetcher:
     
     def _normalize_weather(self, raw_data: dict, region_id: str, location: dict) -> dict:
         """
-        Hava durumu verisini canonical model'e dönüştürür.
+        Converts weather data to canonical model.
         """
         current = raw_data.get("current", {})
         
@@ -226,7 +226,7 @@ class WeatherDataFetcher:
         }
     
     def fetch_all_regions(self) -> list:
-        """Tüm bölgeler için hava durumu çeker"""
+        """Fetches weather for all regions"""
         results = []
         for region_id in self.LOCATIONS:
             try:
@@ -237,18 +237,18 @@ class WeatherDataFetcher:
         return results
 
 
-# Test için main
+# Main for testing
 if __name__ == "__main__":
     print("=" * 60)
     print("GridPulse - AEMO & Weather Data Fetcher")
     print("=" * 60)
-    
-    # Dispatch verisi çek
+
+    # Fetch dispatch data
     print("\n📊 Fetching dispatch data...")
     dispatch_fetcher = AEMODataFetcher()
-    # Not: OpenNEM API değişmiş olabilir, simüle ediyoruz
-    
-    # Hava durumu verisi çek
+    # Note: OpenNEM API may have changed, simulating
+
+    # Fetch weather data
     print("\n🌤️ Fetching weather data...")
     weather_fetcher = WeatherDataFetcher()
     weather_data = weather_fetcher.fetch_all_regions()

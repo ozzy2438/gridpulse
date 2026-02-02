@@ -1,6 +1,6 @@
 #!/bin/bash
-# Kafka Topic'lerini Oluşturma Script'i
-# Bu script Kafka'da gerekli topic'leri oluşturur
+# Kafka Topic Creation Script
+# This script creates required topics in Kafka
 
 echo "=========================================="
 echo "GridPulse - Kafka Topic Setup"
@@ -8,7 +8,7 @@ echo "=========================================="
 
 KAFKA_CONTAINER="gridpulse-kafka"
 
-# Kafka'nın hazır olmasını bekle
+# Wait for Kafka to be ready
 echo "Waiting for Kafka to be ready..."
 until docker exec $KAFKA_CONTAINER kafka-broker-api-versions --bootstrap-server localhost:9092 > /dev/null 2>&1; do
     sleep 2
@@ -16,7 +16,7 @@ done
 echo "Kafka is ready!"
 
 # ========================================
-# ANA TOPIC'LER
+# MAIN TOPICS
 # ========================================
 echo ""
 echo "Creating main topics..."
@@ -42,7 +42,7 @@ docker exec $KAFKA_CONTAINER kafka-topics --create \
 echo "  ✅ weather.observations created (3 partitions)"
 
 # ========================================
-# DEAD LETTER QUEUE TOPIC'LERİ
+# DEAD LETTER QUEUE TOPICS
 # ========================================
 echo ""
 echo "Creating DLQ topics..."
@@ -68,7 +68,7 @@ docker exec $KAFKA_CONTAINER kafka-topics --create \
 echo "  ✅ dlq.weather.observations created"
 
 # ========================================
-# TOPIC LİSTESİ
+# TOPIC LIST
 # ========================================
 echo ""
 echo "=========================================="

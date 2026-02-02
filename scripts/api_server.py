@@ -2,12 +2,12 @@
 """
 GridPulse Backend API
 ---------------------
-Kong'un arkasında çalışan API servisi.
+API service running behind Kong.
 
-Bu servis:
-1. Kafka'dan veri okur
-2. Consumer'lara JSON formatında sunar
-3. Correlation ID'yi takip eder
+This service:
+1. Reads data from Kafka
+2. Presents to consumers in JSON format
+3. Tracks correlation ID
 """
 
 from flask import Flask, jsonify, request, g
@@ -18,16 +18,16 @@ from collections import deque
 import uuid
 import logging
 
-# Logging ayarla
+# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
 # ========================================
-# IN-MEMORY CACHE (Demo amaçlı)
+# IN-MEMORY CACHE (For demo purposes)
 # ========================================
-# Gerçek üretimde Redis veya veritabanı kullanılır
+# In real production, Redis or database would be used
 class DataCache:
     def __init__(self, max_size=1000):
         self.dispatch_events = deque(maxlen=max_size)
@@ -63,7 +63,7 @@ cache = DataCache()
 # KAFKA CONSUMER (Background Thread)
 # ========================================
 def kafka_consumer_thread():
-    """Kafka'dan mesajları oku ve cache'e ekle"""
+    """Read messages from Kafka and add to cache"""
     try:
         from kafka import KafkaConsumer
         consumer = KafkaConsumer(
@@ -100,8 +100,8 @@ def kafka_consumer_thread():
 # ========================================
 @app.before_request
 def before_request():
-    """Her istekte correlation ID'yi yakala veya oluştur"""
-    # Kong'dan gelen correlation ID
+    """Capture or create correlation ID for each request"""
+    # Correlation ID coming from Kong
     correlation_id = request.headers.get('X-Correlation-ID')
     if not correlation_id:
         correlation_id = str(uuid.uuid4())
@@ -114,10 +114,10 @@ def before_request():
 
 @app.after_request
 def after_request(response):
-    """Response'a correlation ID ekle"""
+    """Add correlation ID to response"""
     response.headers['X-Correlation-ID'] = g.correlation_id
-    
-    # İşlem süresini hesapla
+
+    # Calculate processing time
     duration = (datetime.utcnow() - g.request_time).total_seconds() * 1000
     response.headers['X-Response-Time'] = f"{duration:.2f}ms"
     
@@ -147,14 +147,14 @@ def health_check():
 @app.route('/api/v1/dispatch', methods=['GET'])
 def get_dispatch():
     """
-    Market dispatch verilerini getir.
-    
+    Get market dispatch data.
+
     Query Parameters:
-    - region_id: Bölge filtresi (örn: NSW1, VIC1)
-    - limit: Maksimum kayıt sayısı (default: 100)
-    
+    - region_id: Region filter (e.g., NSW1, VIC1)
+    - limit: Maximum number of records (default: 100)
+
     Headers:
-    - X-Correlation-ID: İzlenebilirlik için
+    - X-Correlation-ID: For traceability
     """
     region_id = request.args.get('region_id')
     limit = int(request.args.get('limit', 100))
@@ -175,9 +175,9 @@ def get_dispatch():
 @app.route('/api/v1/dispatch', methods=['POST'])
 def post_dispatch():
     """
-    Yeni dispatch event'i ekle.
-    
-    Bu endpoint genelde webMethods tarafından çağrılır.
+    Add new dispatch event.
+
+    This endpoint is usually called by webMethods.
     """
     try:
         event = request.get_json()
@@ -191,7 +191,7 @@ def post_dispatch():
                     "correlation_id": g.correlation_id
                 }), 400
         
-        # Event ID oluştur
+        # Generate event ID
         if 'event_id' not in event:
             event['event_id'] = f"manual_{g.correlation_id}"
         
@@ -199,7 +199,7 @@ def post_dispatch():
         event['ingestion_time'] = datetime.utcnow().isoformat()
         event['correlation_id'] = g.correlation_id
         
-        # Cache'e ekle
+        # Add to cache
         cache.add_dispatch(event)
         
         return jsonify({
@@ -219,11 +219,11 @@ def post_dispatch():
 @app.route('/api/v1/weather', methods=['GET'])
 def get_weather():
     """
-    Hava durumu gözlemlerini getir.
-    
+    Get weather observations.
+
     Query Parameters:
-    - region_id: Bölge filtresi
-    - limit: Maksimum kayıt sayısı
+    - region_id: Region filter
+    - limit: Maximum number of records
     """
     region_id = request.args.get('region_id')
     limit = int(request.args.get('limit', 100))
@@ -243,11 +243,11 @@ def get_weather():
 
 @app.route('/api/v1/stats', methods=['GET'])
 def get_stats():
-    """Dashboard için istatistikler"""
+    """Statistics for dashboard"""
     dispatch_events = list(cache.dispatch_events)
     weather_events = list(cache.weather_events)
-    
-    # Region bazında aggregation
+
+    # Aggregation by region
     dispatch_by_region = {}
     for event in dispatch_events:
         region = event.get('region_id', 'unknown')
@@ -255,7 +255,7 @@ def get_stats():
             dispatch_by_region[region] = []
         dispatch_by_region[region].append(event.get('value_mw', 0))
     
-    # Ortalama değerler
+    # Average values
     region_stats = {}
     for region, values in dispatch_by_region.items():
         region_stats[region] = {
@@ -299,7 +299,7 @@ def internal_error(error):
 # MAIN
 # ========================================
 if __name__ == '__main__':
-    # Kafka consumer'ı background thread'de başlat
+    # Start Kafka consumer in background thread
     consumer_thread = threading.Thread(target=kafka_consumer_thread, daemon=True)
     consumer_thread.start()
     

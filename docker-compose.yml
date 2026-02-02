@@ -3,10 +3,10 @@ version: '3.8'
 
 services:
   # ========================================
-  # ZOOKEEPER - Kafka'nın koordinatörü
+  # ZOOKEEPER - Kafka coordinator
   # ========================================
-  # Neden gerekli? Kafka cluster'ını yönetir, 
-  # hangi broker'ın lider olduğunu takip eder
+  # Why needed? Manages Kafka cluster,
+  # tracks which broker is the leader
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     container_name: gridpulse-zookeeper
@@ -25,10 +25,10 @@ services:
       start_period: 30s
 
   # ========================================
-  # KAFKA - Event Hub (Mesaj Kuyruğu)
+  # KAFKA - Event Hub (Message Queue)
   # ========================================
-  # Bu, AWS MSK'nın yerel versiyonu
-  # Tüm event'ler buradan geçecek
+  # This is the local version of AWS MSK
+  # All events will pass through here
   kafka:
     image: confluentinc/cp-kafka:7.5.0
     container_name: gridpulse-kafka
@@ -36,21 +36,21 @@ services:
       zookeeper:
         condition: service_healthy
     ports:
-      - "9092:9092"      # Dış erişim portu
-      - "29092:29092"    # İç container erişimi
+      - "9092:9092"      # External access port
+      - "29092:29092"    # Internal container access
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      # Listener yapılandırması - ÖNEMLİ!
+      # Listener configuration - IMPORTANT!
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      # Performans ayarları
+      # Performance settings
       KAFKA_NUM_PARTITIONS: 3
       KAFKA_DEFAULT_REPLICATION_FACTOR: 1
-      # Log retention - 7 gün
+      # Log retention - 7 days
       KAFKA_LOG_RETENTION_HOURS: 168
     networks:
       - gridpulse-network
@@ -61,9 +61,9 @@ services:
       retries: 5
 
   # ========================================
-  # KAFKA UI - Kafka'yı görsel olarak yönet
+  # KAFKA UI - Manage Kafka visually
   # ========================================
-  # Topic'leri, mesajları, consumer'ları görmek için
+  # To see topics, messages, consumers
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: gridpulse-kafka-ui
@@ -79,7 +79,7 @@ services:
       - gridpulse-network
 
   # ========================================
-  # KONG DATABASE - Kong yapılandırmasını saklar
+  # KONG DATABASE - Stores Kong configuration
   # ========================================
   kong-database:
     image: postgres:15-alpine
@@ -101,7 +101,7 @@ services:
       retries: 5
 
   # ========================================
-  # KONG MIGRATIONS - Veritabanı şemasını oluşturur
+  # KONG MIGRATIONS - Creates database schema
   # ========================================
   kong-migrations:
     image: kong:3.5
@@ -143,8 +143,8 @@ services:
       KONG_ADMIN_LISTEN: 0.0.0.0:8001
       KONG_ADMIN_GUI_URL: http://localhost:8002
     ports:
-      - "8100:8000"   # Proxy port (API çağrıları buraya)
-      - "8101:8001"   # Admin API (yapılandırma buradan)
+      - "8100:8000"   # Proxy port (API calls here)
+      - "8101:8001"   # Admin API (configuration from here)
       - "8102:8002"   # Kong Manager UI
       - "8543:8443"   # HTTPS proxy
       - "8544:8444"   # HTTPS admin
@@ -157,7 +157,7 @@ services:
       retries: 5
 
   # ========================================
-  # REDIS - Rate limiting için cache
+  # REDIS - Cache for rate limiting
   # ========================================
   redis:
     image: redis:7-alpine
@@ -168,7 +168,7 @@ services:
       - gridpulse-network
 
   # ========================================
-  # PROMETHEUS - Metrik toplama
+  # PROMETHEUS - Metric collection
   # ========================================
   prometheus:
     image: prom/prometheus:latest
@@ -183,7 +183,7 @@ services:
       - '--config.file=/etc/prometheus/prometheus.yml'
 
   # ========================================
-  # GRAFANA - Dashboard ve görselleştirme
+  # GRAFANA - Dashboard and visualization
   # ========================================
   grafana:
     image: grafana/grafana:latest
@@ -198,14 +198,14 @@ services:
       - gridpulse-network
 
 # ========================================
-# NETWORK - Tüm servisler bu ağda iletişim kurar
+# NETWORK - All services communicate on this network
 # ========================================
 networks:
   gridpulse-network:
     driver: bridge
 
 # ========================================
-# VOLUMES - Kalıcı veri depolama
+# VOLUMES - Persistent data storage
 # ========================================
 volumes:
   kong-db-data:

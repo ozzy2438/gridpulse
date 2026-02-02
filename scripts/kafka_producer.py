@@ -2,13 +2,13 @@
 """
 Kafka Producer Script
 ---------------------
-Bu script normalize edilmiş verileri Kafka'ya gönderir.
+This script sends normalized data to Kafka.
 
-INTERVIEW'DA AÇIKLAYACAĞIN NOKTALAR:
-1. Batch vs Single message gönderimi
+POINTS TO EXPLAIN IN INTERVIEW:
+1. Batch vs Single message sending
 2. Acknowledgment levels (acks)
 3. Idempotent producer
-4. Error handling ve retry
+4. Error handling and retry
 """
 
 import json
@@ -28,66 +28,66 @@ logger = logging.getLogger(__name__)
 
 class GridPulseProducer:
     """
-    Kafka producer wrapper sınıfı.
-    
-    Production-ready özellikler:
-    - Retry mekanizması
+    Kafka producer wrapper class.
+
+    Production-ready features:
+    - Retry mechanism
     - Error handling
     - Metrics
     """
     
     def __init__(self, bootstrap_servers: str = "localhost:9092"):
         """
-        Producer'ı başlat.
-        
-        YAPILANDIRMA AÇIKLAMALARI:
-        - bootstrap_servers: Kafka broker adresleri
-        - acks='all': Tüm replica'ların onayını bekle (en güvenli)
-        - retries=3: Başarısız gönderimde 3 kez dene
-        - enable_idempotence=True: Duplicate mesajları önle
+        Start the producer.
+
+        CONFIGURATION EXPLANATIONS:
+        - bootstrap_servers: Kafka broker addresses
+        - acks='all': Wait for acknowledgment from all replicas (most secure)
+        - retries=3: Try 3 times on failed send
+        - enable_idempotence=True: Prevent duplicate messages
         """
         self.producer = KafkaProducer(
             bootstrap_servers=bootstrap_servers,
-            # Mesajları JSON olarak serialize et
+            # Serialize messages as JSON
             value_serializer=lambda v: json.dumps(v).encode('utf-8'),
             key_serializer=lambda k: k.encode('utf-8') if k else None,
-            # Güvenilirlik ayarları
-            acks='all',  # Tüm in-sync replica'lar onaylamalı
+            # Reliability settings
+            acks='all',  # All in-sync replicas must acknowledge
             retries=3,
             retry_backoff_ms=1000,
-            # Idempotent producer - duplicate'ları önler
+            # Idempotent producer - prevents duplicates
             enable_idempotence=True,
-            # Batch ayarları - performans için
+            # Batch settings - for performance
             batch_size=16384,  # 16KB batch
-            linger_ms=100,  # 100ms bekle, batch'i doldur
+            linger_ms=100,  # Wait 100ms, fill batch
         )
         logger.info(f"Producer connected to {bootstrap_servers}")
     
     def send_dispatch_event(self, event: dict) -> bool:
         """
-        Dispatch event'i Kafka'ya gönderir.
-        
+        Sends dispatch event to Kafka.
+
         PARTITION STRATEGY:
-        - Key olarak region_id kullanıyoruz
-        - Aynı bölgenin tüm event'leri aynı partition'a gider
-        - Bu ordering garantisi sağlar (önemli!)
+        - We use region_id as key
+        - All events from the same region go to the same partition
+        - This ensures ordering guarantee (important!)
         """
         topic = "market.dispatch"
         
-        # Event key = region_id (partition'a yönlendirme için)
+        # Event key = region_id (for routing to partition)
         key = event.get("region_id", "unknown")
-        
-        # Correlation ID ekle/kontrol et
+
+        # Add/check correlation ID
         if "correlation_id" not in event:
             event["correlation_id"] = str(uuid.uuid4())
         
         try:
-            # Asenkron gönderim
+            # Asynchronous sending
             future = self.producer.send(
                 topic=topic,
                 key=key,
                 value=event,
-                # Header'lar - izlenebilirlik için
+                # Headers - for traceability
                 headers=[
                     ("correlation_id", event["correlation_id"].encode()),
                     ("event_type", event["event_type"].encode()),
@@ -96,7 +96,7 @@ class GridPulseProducer:
                 ]
             )
             
-            # Gönderimin başarılı olduğunu doğrula
+            # Verify that sending was successful
             record_metadata = future.get(timeout=10)
             
             logger.info(
@@ -107,13 +107,13 @@ class GridPulseProducer:
             
         except KafkaError as e:
             logger.error(f"❌ Failed to send dispatch event: {e}")
-            # Burada DLQ'ya gönderme mantığı olabilir
+            # Here could be logic to send to DLQ
             self._send_to_dlq(topic, event, str(e))
             return False
     
     def send_weather_event(self, event: dict) -> bool:
         """
-        Weather event'i Kafka'ya gönderir.
+        Sends weather event to Kafka.
         """
         topic = "weather.observations"
         key = event.get("region_id", "unknown")
@@ -149,12 +149,12 @@ class GridPulseProducer:
     
     def _send_to_dlq(self, original_topic: str, event: dict, error: str):
         """
-        Başarısız mesajları Dead Letter Queue'ya gönderir.
-        
-        DLQ NEDEN ÖNEMLİ?
-        - Mesaj kaybolmuyor
-        - Sonradan analiz edilebilir
-        - Manuel müdahale ile tekrar gönderilebilir
+        Sends failed messages to Dead Letter Queue.
+
+        WHY IS DLQ IMPORTANT?
+        - Messages are not lost
+        - Can be analyzed later
+        - Can be resent with manual intervention
         """
         dlq_topic = f"dlq.{original_topic}"
         
@@ -177,8 +177,8 @@ class GridPulseProducer:
     
     def send_batch(self, events: list, event_type: str) -> dict:
         """
-        Birden fazla event'i batch olarak gönderir.
-        
+        Sends multiple events as batch.
+
         Returns:
             dict: {"success": count, "failed": count}
         """
@@ -198,28 +198,28 @@ class GridPulseProducer:
             else:
                 results["failed"] += 1
         
-        # Tüm mesajların gönderildiğinden emin ol
+        # Ensure all messages are sent
         self.producer.flush()
         
         return results
     
     def close(self):
-        """Producer'ı kapat"""
+        """Close the producer"""
         self.producer.flush()
         self.producer.close()
         logger.info("Producer closed")
 
 
-# Demo ve test
+# Demo and test
 if __name__ == "__main__":
     print("=" * 60)
     print("GridPulse - Kafka Producer Demo")
     print("=" * 60)
-    
-    # Producer oluştur
+
+    # Create producer
     producer = GridPulseProducer()
-    
-    # Örnek dispatch event'leri
+
+    # Sample dispatch events
     sample_dispatch_events = [
         {
             "event_id": "NSW1_SOLAR_20240115_1000",
@@ -253,7 +253,7 @@ if __name__ == "__main__":
         }
     ]
     
-    # Örnek weather event'leri
+    # Sample weather events
     sample_weather_events = [
         {
             "event_id": "weather_NSW1_202401151000",
@@ -287,7 +287,7 @@ if __name__ == "__main__":
     weather_results = producer.send_batch(sample_weather_events, "weather")
     print(f"  Results: {weather_results}")
     
-    # Temizlik
+    # Cleanup
     producer.close()
     
     print("\n✅ Demo completed! Check Kafka UI at http://localhost:8080")
