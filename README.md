@@ -1,5 +1,7 @@
 # GridPulse - Energy Integration Platform
+## 🎥 Live Observability Demo
 
+![GridPulse Observability Dashboards](demos/gridpulse_dashboards.gif)
 ## Overview
 
 GridPulse is a reference architecture demonstrating enterprise-grade integration patterns for energy market data using webMethods, Kafka, and Kong.
