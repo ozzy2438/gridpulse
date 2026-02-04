@@ -1,0 +1,424 @@
+{
+  "dashboard": {
+    "uid": "gridpulse-dlq-metrics",
+    "title": "GridPulse - DLQ & Resilience",
+    "tags": ["gridpulse", "kafka", "dlq", "resilience"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 1,
+    "refresh": "30s",
+    "panels": [
+      {
+        "id": 1,
+        "title": "DLQ Message Count",
+        "type": "timeseries",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        },
+        "targets": [
+          {
+            "expr": "kafka_topic_messages{topic=~\"dlq.*\"}",
+            "legendFormat": "{{topic}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "fillOpacity": 30
+            },
+            "color": {
+              "mode": "palette-classic"
+            },
+            "unit": "messages"
+          }
+        },
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "bottom",
+            "calcs": ["lastNotNull", "sum"]
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Total DLQ Messages",
+        "type": "stat",
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 12,
+          "y": 0
+        },
+        "targets": [
+          {
+            "expr": "sum(kafka_topic_messages{topic=~\"dlq.*\"})",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 1,
+                  "color": "yellow"
+                },
+                {
+                  "value": 10,
+                  "color": "orange"
+                },
+                {
+                  "value": 50,
+                  "color": "red"
+                }
+              ]
+            },
+            "unit": "messages"
+          }
+        },
+        "options": {
+          "graphMode": "area",
+          "colorMode": "background",
+          "textMode": "value_and_name"
+        }
+      },
+      {
+        "id": 3,
+        "title": "Failed Message Rate",
+        "type": "stat",
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 18,
+          "y": 0
+        },
+        "targets": [
+          {
+            "expr": "rate(kafka_topic_messages{topic=~\"dlq.*\"}[5m])",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 0.01,
+                  "color": "yellow"
+                },
+                {
+                  "value": 0.1,
+                  "color": "red"
+                }
+              ]
+            },
+            "unit": "msg/s"
+          }
+        },
+        "options": {
+          "graphMode": "line",
+          "colorMode": "value"
+        }
+      },
+      {
+        "id": 4,
+        "title": "Success Rate (%)",
+        "type": "gauge",
+        "gridPos": {
+          "h": 8,
+          "w": 6,
+          "x": 12,
+          "y": 4
+        },
+        "targets": [
+          {
+            "expr": "100 * (1 - (sum(rate(kafka_topic_messages{topic=~\"dlq.*\"}[5m])) / sum(rate(kafka_topic_messages[5m]))))",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "red"
+                },
+                {
+                  "value": 95,
+                  "color": "yellow"
+                },
+                {
+                  "value": 99,
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "percent",
+            "min": 0,
+            "max": 100
+          }
+        },
+        "options": {
+          "showThresholdLabels": true,
+          "showThresholdMarkers": true
+        }
+      },
+      {
+        "id": 5,
+        "title": "Source API Health",
+        "type": "stat",
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 18,
+          "y": 4
+        },
+        "targets": [
+          {
+            "expr": "probe_success{job=\"source-api-health\"}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              {
+                "value": 1,
+                "display": {
+                  "text": "Healthy",
+                  "color": "green"
+                }
+              },
+              {
+                "value": 0,
+                "display": {
+                  "text": "Down",
+                  "color": "red"
+                }
+              }
+            ]
+          }
+        },
+        "options": {
+          "colorMode": "background"
+        }
+      },
+      {
+        "id": 6,
+        "title": "Fallback Activation Count",
+        "type": "stat",
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 18,
+          "y": 8
+        },
+        "targets": [
+          {
+            "expr": "sum(increase(pipeline_fallback_activations[1h]))",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 1,
+                  "color": "yellow"
+                },
+                {
+                  "value": 5,
+                  "color": "red"
+                }
+              ]
+            },
+            "unit": "activations"
+          }
+        },
+        "options": {
+          "graphMode": "area",
+          "colorMode": "value"
+        }
+      },
+      {
+        "id": 7,
+        "title": "DLQ Messages by Topic",
+        "type": "piechart",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 8
+        },
+        "targets": [
+          {
+            "expr": "kafka_topic_messages{topic=~\"dlq.*\"}",
+            "legendFormat": "{{topic}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "messages"
+          }
+        },
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "right",
+            "values": ["value", "percent"]
+          },
+          "pieType": "donut"
+        }
+      },
+      {
+        "id": 8,
+        "title": "Error Timeline",
+        "type": "table",
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 16
+        },
+        "targets": [
+          {
+            "expr": "kafka_topic_messages{topic=~\"dlq.*\"}",
+            "format": "table",
+            "instant": true,
+            "refId": "A"
+          }
+        ],
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "__name__": true,
+                "job": true,
+                "instance": true
+              },
+              "renameByName": {
+                "Value": "Message Count",
+                "topic": "DLQ Topic",
+                "partition": "Partition"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Resilience Metrics",
+        "type": "timeseries",
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 24
+        },
+        "targets": [
+          {
+            "expr": "rate(pipeline_requests_total[1m])",
+            "legendFormat": "Total Requests",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(pipeline_requests_failed[1m])",
+            "legendFormat": "Failed Requests",
+            "refId": "B"
+          },
+          {
+            "expr": "rate(pipeline_fallback_activations[1m])",
+            "legendFormat": "Fallback Activations",
+            "refId": "C"
+          },
+          {
+            "expr": "rate(pipeline_retry_attempts[1m])",
+            "legendFormat": "Retry Attempts",
+            "refId": "D"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "fillOpacity": 20
+            },
+            "color": {
+              "mode": "palette-classic"
+            },
+            "unit": "ops"
+          }
+        },
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "bottom",
+            "calcs": ["lastNotNull", "max", "mean"]
+          }
+        }
+      }
+    ],
+    "annotations": {
+      "list": [
+        {
+          "datasource": "Prometheus",
+          "enable": true,
+          "expr": "changes(kafka_topic_messages{topic=~\"dlq.*\"}[1m]) > 0",
+          "iconColor": "red",
+          "name": "DLQ Activity",
+          "step": "1m",
+          "titleFormat": "Message Sent to DLQ"
+        },
+        {
+          "datasource": "Prometheus",
+          "enable": true,
+          "expr": "changes(pipeline_fallback_activations[1m]) > 0",
+          "iconColor": "yellow",
+          "name": "Fallback Triggered",
+          "step": "1m",
+          "titleFormat": "Fallback Mechanism Activated"
+        }
+      ]
+    }
+  }
+}

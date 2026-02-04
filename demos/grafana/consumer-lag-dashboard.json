@@ -1,0 +1,369 @@
+{
+  "dashboard": {
+    "uid": "gridpulse-consumer-lag",
+    "title": "GridPulse - Consumer Lag",
+    "tags": ["gridpulse", "kafka", "consumer-lag"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 1,
+    "refresh": "10s",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Consumer Lag by Partition",
+        "type": "timeseries",
+        "gridPos": {
+          "h": 10,
+          "w": 16,
+          "x": 0,
+          "y": 0
+        },
+        "targets": [
+          {
+            "expr": "kafka_consumer_group_lag{topic=\"market.dispatch\"}",
+            "legendFormat": "{{partition}} ({{topic}})",
+            "refId": "A"
+          },
+          {
+            "expr": "kafka_consumer_group_lag{topic=\"weather.observations\"}",
+            "legendFormat": "{{partition}} ({{topic}})",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "fillOpacity": 20,
+              "stacking": {
+                "mode": "none"
+              }
+            },
+            "color": {
+              "mode": "palette-classic"
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "bottom",
+            "calcs": ["lastNotNull", "max", "mean"]
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Total Lag (All Partitions)",
+        "type": "stat",
+        "gridPos": {
+          "h": 5,
+          "w": 8,
+          "x": 16,
+          "y": 0
+        },
+        "targets": [
+          {
+            "expr": "sum(kafka_consumer_group_lag)",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 50,
+                  "color": "yellow"
+                },
+                {
+                  "value": 200,
+                  "color": "red"
+                }
+              ]
+            },
+            "unit": "messages"
+          }
+        },
+        "options": {
+          "graphMode": "area",
+          "colorMode": "value",
+          "textMode": "value_and_name"
+        }
+      },
+      {
+        "id": 3,
+        "title": "Max Lag (Slowest Consumer)",
+        "type": "stat",
+        "gridPos": {
+          "h": 5,
+          "w": 8,
+          "x": 16,
+          "y": 5
+        },
+        "targets": [
+          {
+            "expr": "max(kafka_consumer_group_lag)",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 20,
+                  "color": "yellow"
+                },
+                {
+                  "value": 100,
+                  "color": "red"
+                }
+              ]
+            },
+            "unit": "messages"
+          }
+        },
+        "options": {
+          "graphMode": "area",
+          "colorMode": "value"
+        }
+      },
+      {
+        "id": 4,
+        "title": "Messages Consumed Per Second",
+        "type": "timeseries",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 10
+        },
+        "targets": [
+          {
+            "expr": "rate(kafka_consumer_messages_consumed_total[1m])",
+            "legendFormat": "{{topic}} - {{partition}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "bars",
+              "fillOpacity": 50
+            },
+            "color": {
+              "mode": "palette-classic"
+            },
+            "unit": "msg/s"
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "Consumer Offset Position",
+        "type": "timeseries",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 10
+        },
+        "targets": [
+          {
+            "expr": "kafka_consumer_group_offset",
+            "legendFormat": "{{topic}}-{{partition}} (current)",
+            "refId": "A"
+          },
+          {
+            "expr": "kafka_consumer_group_log_end_offset",
+            "legendFormat": "{{topic}}-{{partition}} (log end)",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "stepAfter"
+            },
+            "color": {
+              "mode": "palette-classic"
+            },
+            "unit": "offset"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byFrameRefID",
+                "options": "B"
+              },
+              "properties": [
+                {
+                  "id": "custom.lineStyle",
+                  "value": {
+                    "dash": [10, 10],
+                    "fill": "dash"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": 6,
+        "title": "Lag Trend (1 Hour)",
+        "type": "bargauge",
+        "gridPos": {
+          "h": 8,
+          "w": 8,
+          "x": 0,
+          "y": 18
+        },
+        "targets": [
+          {
+            "expr": "avg_over_time(kafka_consumer_group_lag[1h])",
+            "legendFormat": "{{topic}}-p{{partition}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 10,
+                  "color": "yellow"
+                },
+                {
+                  "value": 50,
+                  "color": "red"
+                }
+              ]
+            },
+            "unit": "messages"
+          }
+        },
+        "options": {
+          "displayMode": "lcd",
+          "orientation": "horizontal"
+        }
+      },
+      {
+        "id": 7,
+        "title": "Consumer Group Status",
+        "type": "table",
+        "gridPos": {
+          "h": 8,
+          "w": 16,
+          "x": 8,
+          "y": 18
+        },
+        "targets": [
+          {
+            "expr": "kafka_consumer_group_lag",
+            "format": "table",
+            "instant": true,
+            "refId": "A"
+          }
+        ],
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "__name__": true,
+                "job": true,
+                "instance": true
+              },
+              "renameByName": {
+                "Value": "Lag",
+                "topic": "Topic",
+                "partition": "Partition",
+                "consumer_group": "Consumer Group"
+              }
+            }
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "align": "center"
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Lag"
+              },
+              "properties": [
+                {
+                  "id": "custom.cellOptions",
+                  "value": {
+                    "type": "color-background"
+                  }
+                },
+                {
+                  "id": "thresholds",
+                  "value": {
+                    "mode": "absolute",
+                    "steps": [
+                      {"value": null, "color": "green"},
+                      {"value": 10, "color": "yellow"},
+                      {"value": 50, "color": "red"}
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "annotations": {
+      "list": [
+        {
+          "datasource": "Prometheus",
+          "enable": true,
+          "expr": "changes(kafka_consumer_group_lag[1m]) > 10",
+          "iconColor": "orange",
+          "name": "Lag Spike",
+          "step": "1m",
+          "titleFormat": "Consumer Lag Increased"
+        }
+      ]
+    }
+  }
+}

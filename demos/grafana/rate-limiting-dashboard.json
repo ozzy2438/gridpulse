@@ -1,0 +1,243 @@
+{
+  "dashboard": {
+    "uid": "gridpulse-rate-limiting",
+    "title": "GridPulse - Rate Limiting",
+    "tags": ["gridpulse", "kong", "rate-limiting"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 1,
+    "refresh": "5s",
+    "panels": [
+      {
+        "id": 1,
+        "title": "HTTP Status Codes (200 vs 429)",
+        "type": "timeseries",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        },
+        "targets": [
+          {
+            "expr": "sum by (code) (rate(kong_http_status[1m]))",
+            "legendFormat": "HTTP {{code}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "linear",
+              "fillOpacity": 10
+            },
+            "color": {
+              "mode": "palette-classic"
+            },
+            "unit": "reqps"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "HTTP 200"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "mode": "fixed",
+                    "fixedColor": "green"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "HTTP 429"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "mode": "fixed",
+                    "fixedColor": "red"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": 2,
+        "title": "Rate Limit Hits (Last Hour)",
+        "type": "stat",
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 12,
+          "y": 0
+        },
+        "targets": [
+          {
+            "expr": "sum(increase(kong_http_status{code=\"429\"}[1h]))",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 10,
+                  "color": "yellow"
+                },
+                {
+                  "value": 50,
+                  "color": "red"
+                }
+              ]
+            },
+            "unit": "short"
+          }
+        },
+        "options": {
+          "graphMode": "area",
+          "colorMode": "value",
+          "textMode": "value_and_name"
+        }
+      },
+      {
+        "id": 3,
+        "title": "Requests Per Consumer",
+        "type": "bargauge",
+        "gridPos": {
+          "h": 8,
+          "w": 6,
+          "x": 18,
+          "y": 0
+        },
+        "targets": [
+          {
+            "expr": "sum by (consumer) (rate(kong_http_requests_total[5m]))",
+            "legendFormat": "{{consumer}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "unit": "reqps"
+          }
+        },
+        "options": {
+          "displayMode": "gradient",
+          "orientation": "horizontal"
+        }
+      },
+      {
+        "id": 4,
+        "title": "Success Rate (%)",
+        "type": "gauge",
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 12,
+          "y": 4
+        },
+        "targets": [
+          {
+            "expr": "100 * sum(rate(kong_http_status{code=\"200\"}[5m])) / sum(rate(kong_http_status[5m]))",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "red"
+                },
+                {
+                  "value": 80,
+                  "color": "yellow"
+                },
+                {
+                  "value": 95,
+                  "color": "green"
+                }
+              ]
+            },
+            "unit": "percent",
+            "min": 0,
+            "max": 100
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "Request Timeline",
+        "type": "table",
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 8
+        },
+        "targets": [
+          {
+            "expr": "kong_http_status",
+            "format": "table",
+            "instant": true,
+            "refId": "A"
+          }
+        ],
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "__name__": true,
+                "job": true,
+                "instance": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "annotations": {
+      "list": [
+        {
+          "datasource": "Prometheus",
+          "enable": true,
+          "expr": "changes(kong_http_status{code=\"429\"}[1m]) > 0",
+          "iconColor": "red",
+          "name": "Rate Limit Events",
+          "step": "1m",
+          "tagKeys": "code",
+          "textFormat": "Rate limit triggered",
+          "titleFormat": "Rate Limit"
+        }
+      ]
+    }
+  }
+}

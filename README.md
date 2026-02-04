@@ -71,51 +71,84 @@ Data Sources → webMethods (normalize) → Kafka (event hub) → Kong (API gate
 - Python 3.9+
 - curl (for API testing)
 
-### 1. Start Infrastructure
+### Automated Setup (Recommended)
 
 ```bash
 # Clone the repo
 cd gridpulse
 
-# Start all services
-docker-compose up -d
-
-# Wait for services to be healthy (about 60 seconds)
-docker-compose ps
+# Run the quick start script
+./start.sh
 ```
 
-### 2. Create Kafka Topics
+This script will:
+- ✅ Check Docker is running
+- ✅ Start all services (Kafka, Kong, Monitoring)
+- ✅ Create Kafka topics
+- ✅ Configure Kong API Gateway
+- ✅ Set up Python virtual environment
+- ✅ Test data sources (real weather data!)
+
+### Manual Setup
+
+#### 1. Start Infrastructure
+
+```bash
+# Make sure Docker Desktop is running
+# macOS: open -a Docker
+
+# Start all services
+docker compose up -d
+
+# Wait for services to be healthy (about 60 seconds)
+docker compose ps
+```
+
+#### 2. Create Kafka Topics
 
 ```bash
 chmod +x scripts/create_kafka_topics.sh
 ./scripts/create_kafka_topics.sh
 ```
 
-### 3. Configure Kong
+#### 3. Configure Kong
 
 ```bash
 chmod +x scripts/setup_kong.sh
 ./scripts/setup_kong.sh
 ```
 
-### 4. Start API Server
+#### 4. Set Up Python Environment
 
 ```bash
-# Install dependencies
-pip install flask kafka-python requests
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
 
-# Start the API server
+# Install dependencies
+pip install -r requirements.txt
+```
+
+#### 5. Start API Server
+
+```bash
+# In terminal 1
+source venv/bin/activate
 python scripts/api_server.py
 ```
 
-### 5. Send Test Data
+#### 6. Run Data Pipeline
 
 ```bash
-# Send sample events to Kafka
-python scripts/kafka_producer.py
+# In terminal 2 (fetches REAL data from APIs!)
+source venv/bin/activate
+python scripts/data_pipeline.py
+
+# Or run continuously every 5 minutes
+python scripts/data_pipeline.py --continuous --interval 300
 ```
 
-### 6. Test the API
+#### 7. Test the API
 
 ```bash
 # Without API key (should fail with 401)
@@ -182,6 +215,7 @@ GET /api/v1/stats
 
 ```
 gridpulse/
+├── start.sh                    # 🚀 Quick start script (run this!)
 ├── docker-compose.yml          # All services definition
 ├── docker/
 │   ├── kafka/                  # Kafka configuration
@@ -193,13 +227,15 @@ gridpulse/
 │       ├── MarketDispatchEvent.xsd
 │       └── WeatherObservation.xsd
 ├── scripts/
+│   ├── data_pipeline.py        # 🌟 Complete data pipeline (real APIs!)
 │   ├── download_aemo.py        # AEMO data fetcher
+│   ├── test_data_fetch.py      # Test data sources without Kafka
 │   ├── kafka_producer.py       # Kafka producer
 │   ├── api_server.py           # Flask API server
 │   ├── create_kafka_topics.sh  # Topic creation script
 │   └── setup_kong.sh           # Kong configuration script
 ├── data/
-│   ├── raw/                    # Raw data from sources
+│   ├── raw/                    # Raw data from sources (real weather data!)
 │   └── processed/              # Processed data
 ├── monitoring/
 │   └── prometheus.yml          # Prometheus configuration

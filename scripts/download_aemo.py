@@ -107,7 +107,7 @@ class AEMODataFetcher:
                         "unit": "MW",
                         # Metadata
                         "source": "OPENNEM",
-                        "ingestion_time": datetime.utcnow().isoformat(),
+                        "ingestion_time": datetime.now().isoformat(),
                         "correlation_id": self._generate_correlation_id()
                     })
         
@@ -140,11 +140,11 @@ class AEMODataFetcher:
     
     def _save_raw(self, data: dict, prefix: str):
         """Save raw data for debugging"""
-        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filepath = os.path.join(self.output_dir, f"{prefix}_{timestamp}.json")
         with open(filepath, 'w') as f:
             json.dump(data, f, indent=2)
-        logger.debug(f"Saved raw data to {filepath}")
+        logger.info(f"Saved raw data to {filepath}")
 
 
 class WeatherDataFetcher:
@@ -210,10 +210,17 @@ class WeatherDataFetcher:
         """
         current = raw_data.get("current", {})
         
+        # Save raw data
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filepath = os.path.join(self.output_dir, f"weather_{region_id}_{timestamp}.json")
+        with open(filepath, 'w') as f:
+            json.dump(raw_data, f, indent=2)
+        logger.info(f"Saved weather data to {filepath}")
+        
         return {
-            "event_id": f"weather_{region_id}_{datetime.utcnow().strftime('%Y%m%d%H%M')}",
+            "event_id": f"weather_{region_id}_{datetime.now().strftime('%Y%m%d%H%M')}",
             "event_type": "WeatherObservation",
-            "event_time": datetime.utcnow().isoformat(),
+            "event_time": datetime.now().isoformat(),
             "region_id": region_id,
             "location_name": location["name"],
             "temperature_celsius": current.get("temperature_2m"),
@@ -221,7 +228,7 @@ class WeatherDataFetcher:
             "humidity_percent": current.get("relative_humidity_2m"),
             # Metadata
             "source": "OPENMETEO",
-            "ingestion_time": datetime.utcnow().isoformat(),
+            "ingestion_time": datetime.now().isoformat(),
             "correlation_id": str(uuid.uuid4())
         }
     

@@ -1,0 +1,406 @@
+{
+  "dashboard": {
+    "uid": "gridpulse-e2e-latency",
+    "title": "GridPulse - End-to-End Latency",
+    "tags": ["gridpulse", "latency", "performance"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 1,
+    "refresh": "10s",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Request Latency (P50/P95/P99)",
+        "type": "timeseries",
+        "gridPos": {
+          "h": 10,
+          "w": 16,
+          "x": 0,
+          "y": 0
+        },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, rate(http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "P50",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "P95",
+            "refId": "B"
+          },
+          {
+            "expr": "histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "P99",
+            "refId": "C"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "fillOpacity": 10
+            },
+            "color": {
+              "mode": "palette-classic"
+            },
+            "unit": "ms"
+          },
+          "overrides": [
+            {
+              "matcher": {"id": "byName", "options": "P50"},
+              "properties": [{"id": "color", "value": {"fixedColor": "green", "mode": "fixed"}}]
+            },
+            {
+              "matcher": {"id": "byName", "options": "P95"},
+              "properties": [{"id": "color", "value": {"fixedColor": "yellow", "mode": "fixed"}}]
+            },
+            {
+              "matcher": {"id": "byName", "options": "P99"},
+              "properties": [{"id": "color", "value": {"fixedColor": "red", "mode": "fixed"}}]
+            }
+          ]
+        },
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "bottom",
+            "calcs": ["lastNotNull", "max", "mean"]
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Average Latency",
+        "type": "stat",
+        "gridPos": {
+          "h": 5,
+          "w": 4,
+          "x": 16,
+          "y": 0
+        },
+        "targets": [
+          {
+            "expr": "avg(rate(http_request_duration_seconds_sum[5m]) / rate(http_request_duration_seconds_count[5m])) * 1000",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": null, "color": "green"},
+                {"value": 50, "color": "yellow"},
+                {"value": 100, "color": "red"}
+              ]
+            },
+            "unit": "ms"
+          }
+        },
+        "options": {
+          "graphMode": "area",
+          "colorMode": "value"
+        }
+      },
+      {
+        "id": 3,
+        "title": "Max Latency (5m)",
+        "type": "stat",
+        "gridPos": {
+          "h": 5,
+          "w": 4,
+          "x": 20,
+          "y": 0
+        },
+        "targets": [
+          {
+            "expr": "max_over_time(http_request_duration_seconds[5m]) * 1000",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": null, "color": "green"},
+                {"value": 100, "color": "yellow"},
+                {"value": 500, "color": "red"}
+              ]
+            },
+            "unit": "ms"
+          }
+        },
+        "options": {
+          "colorMode": "background"
+        }
+      },
+      {
+        "id": 4,
+        "title": "Kong Gateway Latency",
+        "type": "timeseries",
+        "gridPos": {
+          "h": 8,
+          "w": 8,
+          "x": 0,
+          "y": 10
+        },
+        "targets": [
+          {
+            "expr": "rate(kong_latency_sum[1m]) / rate(kong_latency_count[1m])",
+            "legendFormat": "Kong Gateway",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "fillOpacity": 30
+            },
+            "color": {"mode": "palette-classic"},
+            "unit": "ms"
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "API Server Processing Time",
+        "type": "timeseries",
+        "gridPos": {
+          "h": 8,
+          "w": 8,
+          "x": 8,
+          "y": 10
+        },
+        "targets": [
+          {
+            "expr": "rate(api_processing_duration_sum[1m]) / rate(api_processing_duration_count[1m])",
+            "legendFormat": "API Processing",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "fillOpacity": 30
+            },
+            "color": {"mode": "palette-classic"},
+            "unit": "ms"
+          }
+        }
+      },
+      {
+        "id": 6,
+        "title": "Kafka Publish Time",
+        "type": "timeseries",
+        "gridPos": {
+          "h": 8,
+          "w": 8,
+          "x": 16,
+          "y": 10
+        },
+        "targets": [
+          {
+            "expr": "rate(kafka_publish_duration_sum[1m]) / rate(kafka_publish_duration_count[1m])",
+            "legendFormat": "Kafka Publish",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "fillOpacity": 30
+            },
+            "color": {"mode": "palette-classic"},
+            "unit": "ms"
+          }
+        }
+      },
+      {
+        "id": 7,
+        "title": "Latency Breakdown (Stacked)",
+        "type": "timeseries",
+        "gridPos": {
+          "h": 10,
+          "w": 16,
+          "x": 0,
+          "y": 18
+        },
+        "targets": [
+          {
+            "expr": "rate(kong_latency_sum[1m]) / rate(kong_latency_count[1m])",
+            "legendFormat": "Kong",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(api_processing_duration_sum[1m]) / rate(api_processing_duration_count[1m])",
+            "legendFormat": "API Server",
+            "refId": "B"
+          },
+          {
+            "expr": "rate(kafka_consume_duration_sum[1m]) / rate(kafka_consume_duration_count[1m])",
+            "legendFormat": "Kafka Consumer",
+            "refId": "C"
+          },
+          {
+            "expr": "rate(db_query_duration_sum[1m]) / rate(db_query_duration_count[1m])",
+            "legendFormat": "Database",
+            "refId": "D"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "bars",
+              "fillOpacity": 80,
+              "stacking": {"mode": "normal"}
+            },
+            "color": {"mode": "palette-classic"},
+            "unit": "ms"
+          }
+        },
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "bottom",
+            "calcs": ["lastNotNull", "mean", "max"]
+          }
+        }
+      },
+      {
+        "id": 8,
+        "title": "Requests Per Second",
+        "type": "stat",
+        "gridPos": {
+          "h": 5,
+          "w": 4,
+          "x": 16,
+          "y": 18
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total[1m]))",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": null, "color": "green"},
+                {"value": 50, "color": "yellow"},
+                {"value": 100, "color": "red"}
+              ]
+            },
+            "unit": "reqps"
+          }
+        },
+        "options": {
+          "graphMode": "line",
+          "colorMode": "value"
+        }
+      },
+      {
+        "id": 9,
+        "title": "Error Rate",
+        "type": "stat",
+        "gridPos": {
+          "h": 5,
+          "w": 4,
+          "x": 20,
+          "y": 18
+        },
+        "targets": [
+          {
+            "expr": "100 * sum(rate(http_requests_total{code=~\"5..\"}[5m])) / sum(rate(http_requests_total[5m]))",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": null, "color": "green"},
+                {"value": 1, "color": "yellow"},
+                {"value": 5, "color": "red"}
+              ]
+            },
+            "unit": "percent",
+            "max": 100
+          }
+        },
+        "options": {
+          "graphMode": "area",
+          "colorMode": "background"
+        }
+      },
+      {
+        "id": 10,
+        "title": "Latency Heatmap",
+        "type": "heatmap",
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 28
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(http_request_duration_seconds_bucket[1m])) by (le)",
+            "format": "heatmap",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "hideFrom": {
+                "tooltip": false,
+                "viz": false,
+                "legend": false
+              }
+            }
+          }
+        },
+        "options": {
+          "calculate": true,
+          "cellGap": 2,
+          "color": {
+            "mode": "scheme",
+            "scheme": "Spectral"
+          },
+          "exemplars": {
+            "color": "rgba(255,0,255,0.7)"
+          },
+          "yAxis": {
+            "unit": "ms"
+          }
+        }
+      }
+    ],
+    "annotations": {
+      "list": [
+        {
+          "datasource": "Prometheus",
+          "enable": true,
+          "expr": "histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[1m])) > 0.1",
+          "iconColor": "orange",
+          "name": "High Latency",
+          "step": "1m",
+          "titleFormat": "P99 Latency > 100ms"
+        }
+      ]
+    }
+  }
+}

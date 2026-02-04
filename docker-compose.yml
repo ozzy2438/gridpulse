@@ -188,12 +188,36 @@ services:
   grafana:
     image: grafana/grafana:latest
     container_name: gridpulse-grafana
+    depends_on:
+      - grafana-image-renderer
     ports:
       - "3001:3000"
     environment:
       GF_SECURITY_ADMIN_PASSWORD: admin
+      # Image rendering for PNG export
+      GF_RENDERING_SERVER_URL: http://grafana-image-renderer:8081/render
+      GF_RENDERING_CALLBACK_URL: http://grafana:3000/
+      GF_LOG_FILTERS: rendering:debug
+      # Allow anonymous access for image rendering
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
     volumes:
       - grafana-data:/var/lib/grafana
+    networks:
+      - gridpulse-network
+
+  # ========================================
+  # GRAFANA IMAGE RENDERER - PNG Export
+  # ========================================
+  # Enables exporting dashboards as PNG images
+  grafana-image-renderer:
+    image: grafana/grafana-image-renderer:latest
+    container_name: grafana-image-renderer
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      ENABLE_METRICS: "true"
     networks:
       - gridpulse-network
 
